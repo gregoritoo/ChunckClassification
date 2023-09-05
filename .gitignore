@@ -1,8 +1,8 @@
 
-
 **/__pycache__/
 *.pkl
 *.xlsx
 /models/xgb_model
 /models/xgb_model.joblib
 **/.ipynb_checkpoints/
+.venv/

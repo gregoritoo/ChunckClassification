@@ -1,4 +1,4 @@
-import pandas as pd 
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import random
@@ -8,7 +8,7 @@ from sklearn.metrics import auc, roc_curve
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
 import umap
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import seaborn as sn
 from sklearn.preprocessing import OneHotEncoder
 import nltk
@@ -17,7 +17,8 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import RegexpTokenizer
 from hyperopt import STATUS_OK, Trials, fmin, hp, tpe
-import catboost as cb 
+import catboost as cb
+
 
 def preprocess_text(text):
     """
@@ -39,12 +40,15 @@ def preprocess_text(text):
         input_text = "The quick brown foxes are jumping over the lazy dog."
         preprocessed_tokens = preprocess_text(input_text)
     """
-    tokenizer = RegexpTokenizer(r'\w+')
+    tokenizer = RegexpTokenizer(r"\w+")
     tokens = tokenizer.tokenize(text.lower())
-    filtered_tokens = [token for token in tokens if token not in stopwords.words('english')]
+    filtered_tokens = [
+        token for token in tokens if token not in stopwords.words("english")
+    ]
     lemmatizer = WordNetLemmatizer()
     lemmatized_tokens = [lemmatizer.lemmatize(token) for token in filtered_tokens]
     return lemmatized_tokens
+
 
 def do_basic_analysis(df):
     """
@@ -71,7 +75,7 @@ def do_basic_analysis(df):
     print(df.describe())
     print(f"Number of null elemnt in dataset : {df.isnull().values.sum()}")
     for column in df.keys():
-        if df[column].isnull().values.any() :
+        if df[column].isnull().values.any():
             print(f"{df[column].isnull().values.sum()} element null in column {column}")
 
 
@@ -92,17 +96,22 @@ def do_disribution_analysis(df):
         df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6], 'C': ['X', 'Y', 'Z']})
         do_distribution_analysis(df)
     """
-    nb_columns_splitter  = 2
+    nb_columns_splitter = 2
     columns_non_numerical = find_non_numerical_columns(df)
     columns = [column for column in df.keys() if column not in columns_non_numerical]
-    fig , ax = plt.subplots(nb_columns_splitter,int(len(columns)/nb_columns_splitter) , figsize=(20,7))
-    for pos,column in enumerate(columns) :
+    fig, ax = plt.subplots(
+        nb_columns_splitter, int(len(columns) / nb_columns_splitter), figsize=(20, 7)
+    )
+    for pos, column in enumerate(columns):
         labels = df[column].values
-        counts, edges, bars  = ax[pos%nb_columns_splitter,pos//nb_columns_splitter].hist(labels,bins=10)
-        ax[pos%nb_columns_splitter,pos//nb_columns_splitter].bar_label(bars)
-        ax[pos%nb_columns_splitter,pos//nb_columns_splitter].set_title(f"Distribution {column}")
+        counts, edges, bars = ax[
+            pos % nb_columns_splitter, pos // nb_columns_splitter
+        ].hist(labels, bins=10)
+        ax[pos % nb_columns_splitter, pos // nb_columns_splitter].bar_label(bars)
+        ax[pos % nb_columns_splitter, pos // nb_columns_splitter].set_title(
+            f"Distribution {column}"
+        )
     plt.show()
-
 
 
 def do_correlation_analysis(df):
@@ -123,15 +132,16 @@ def do_correlation_analysis(df):
         do_correlation_analysis(df)
     """
     non_numerical_columns = find_non_numerical_columns(df)
-    for column in non_numerical_columns :
-        restricted_df =  categorize_columns(restricted_df,column,f"{column}_cat")
+    for column in non_numerical_columns:
+        restricted_df = categorize_columns(restricted_df, column, f"{column}_cat")
     numerical_df = restricted_df.drop(columns=non_numerical_columns)
     corr_matrix = numerical_df.corr()
-    plt.figure(figsize=(15,8))
+    plt.figure(figsize=(15, 8))
     sn.heatmap(corr_matrix, annot=True)
     plt.show()
 
-def categorize_columns(df, origin_column_name, target_column_name) :
+
+def categorize_columns(df, origin_column_name, target_column_name):
     """
     Caterogize wanted columns
     Args :
@@ -153,8 +163,7 @@ def categorize_columns(df, origin_column_name, target_column_name) :
     return df
 
 
-
-def convert_df_to_numeric_df(df,columns_to_drop):
+def convert_df_to_numeric_df(df, columns_to_drop):
     """
     Convert a DataFrame to a numeric-only DataFrame by dropping specified columns and categorizing non-numerical columns.
 
@@ -174,15 +183,15 @@ def convert_df_to_numeric_df(df,columns_to_drop):
         columns_to_drop = ['B']
         numeric_df = convert_df_to_numeric_df(df, columns_to_drop)
     """
-    try :
+    try:
         df = df.drop(columns=columns_to_drop)
-    except Exception as e: 
+    except Exception as e:
         pass
     non_numerical_columns = find_non_numerical_columns(df)
-    for column in non_numerical_columns :
-        df =  categorize_columns(df,column,f"{column}_cat")
+    for column in non_numerical_columns:
+        df = categorize_columns(df, column, f"{column}_cat")
     df = df.drop(columns=non_numerical_columns)
-    return df 
+    return df
 
 
 def find_non_numerical_columns(df):
@@ -206,14 +215,15 @@ def find_non_numerical_columns(df):
     """
     non_numerical_columns = []
     for column in df.keys():
-        if isinstance(df[column][0],str):
-            if sum([ row.isnumeric() for row in df[column].values if  isinstance(row,str)]) != len(df[column]):
+        if isinstance(df[column][0], str):
+            if sum(
+                [row.isnumeric() for row in df[column].values if isinstance(row, str)]
+            ) != len(df[column]):
                 non_numerical_columns.append(column)
     return non_numerical_columns
 
 
-
-def scale_columns(df,columns=None,return_scaler=False) :
+def scale_columns(df, columns=None, return_scaler=False):
     """
     Scales specified columns of a DataFrame using StandardScaler.
 
@@ -232,20 +242,22 @@ def scale_columns(df,columns=None,return_scaler=False) :
                                  'col2': [4, 5, 6]})
         scaled_df = scale_columns(input_df, columns=['col1', 'col2'])
     """
-    keys_to_keep = [column_name for column_name in df.keys() if column_name not in columns ]
+    keys_to_keep = [
+        column_name for column_name in df.keys() if column_name not in columns
+    ]
     std_scaler = StandardScaler()
     sub_df = df[columns].copy()
     df_scaled = std_scaler.fit_transform(sub_df.to_numpy())
     df_scaled = pd.DataFrame(df_scaled, columns=columns)
-    for key in keys_to_keep :
+    for key in keys_to_keep:
         df_scaled[key] = df[key]
-    if not return_scaler :
-        return df_scaled  
-    else :
-        return df_scaled,std_scaler
+    if not return_scaler:
+        return df_scaled
+    else:
+        return df_scaled, std_scaler
 
 
-def evaluate_model(X_test,y_test,model,verbose=0):
+def evaluate_model(X_test, y_test, model, verbose=0):
     """
     Evaluate the performance of a binary classification model using various metrics.
 
@@ -269,19 +281,20 @@ def evaluate_model(X_test,y_test,model,verbose=0):
         evaluate_model(X_test_data, y_test_labels, trained_model)
     """
     y_predicted = model.predict(X_test)
-    y_predicted = np.where(y_predicted > 0.5,1,0)
-    fpr, tpr, thresholds = roc_curve(y_test, y_predicted, pos_label = 1)
-    if verbose == 1 :
+    y_predicted = np.where(y_predicted > 0.5, 1, 0)
+    fpr, tpr, thresholds = roc_curve(y_test, y_predicted, pos_label=1)
+    if verbose == 1:
         print(f" balanced accuracy is {balanced_accuracy_score(y_test,y_predicted)}")
         print(f" AUC is {auc(fpr, tpr)}")
         c_matrix = confusion_matrix(y_predicted, y_test)
-        disp = ConfusionMatrixDisplay(confusion_matrix=c_matrix,
-                                display_labels=np.unique(y_test))
+        disp = ConfusionMatrixDisplay(
+            confusion_matrix=c_matrix, display_labels=np.unique(y_test)
+        )
         disp.plot()
-    return balanced_accuracy_score(y_test,y_predicted)
+    return balanced_accuracy_score(y_test, y_predicted)
 
 
-def evaluate_cross_validation(scaled_df,model,target,cv=5,test_size=0.2):
+def evaluate_cross_validation(scaled_df, model, target, cv=5, test_size=0.2):
     """
     Evaluate a binary classification model using cross-validation.
 
@@ -305,15 +318,22 @@ def evaluate_cross_validation(scaled_df,model,target,cv=5,test_size=0.2):
         classification_model = ...  # Instantiate a binary classification model
         scores = evaluate_cross_validation(scaled_data, classification_model, target_labels)
     """
-    ranndom_states = [random.randint(0,10) for _ in range(cv)]
+    ranndom_states = [random.randint(0, 10) for _ in range(cv)]
     balanced_accuracys = []
-    for random_state in ranndom_states :
-        X_train, X_test, y_train, y_test = train_test_split(scaled_df, target, test_size=test_size, random_state=random_state, stratify=target)
+    for random_state in ranndom_states:
+        X_train, X_test, y_train, y_test = train_test_split(
+            scaled_df,
+            target,
+            test_size=test_size,
+            random_state=random_state,
+            stratify=target,
+        )
         model.fit(X_train, y_train)
-        balanced_accuracys.append(evaluate_model(X_test,y_test,model,verbose=False))
+        balanced_accuracys.append(evaluate_model(X_test, y_test, model, verbose=False))
     return balanced_accuracys
 
-def objective_xgb(xgb_model,params,X_train, y_train,X_test,y_test):
+
+def objective_xgb(xgb_model, params, X_train, y_train, X_test, y_test):
     """
     Optimize XGBoost hyperparameters using cross-validation.
 
@@ -335,12 +355,11 @@ def objective_xgb(xgb_model,params,X_train, y_train,X_test,y_test):
     xgb_model = xgb.XGBClassifier(**params)
     xgb_model.fit(X_train, y_train)
     y_pred = xgb_model.predict(X_test)
-    score = evaluate_model(X_test, y_test,xgb_model)
-    return {'loss': -score, 'status': 200}
+    score = evaluate_model(X_test, y_test, xgb_model)
+    return {"loss": -score, "status": 200}
 
 
-
-def clustering(vectorize_sentence,words_embeddings):
+def clustering(vectorize_sentence, words_embeddings):
     """
     Perform dimensionality reduction and clustering using UMAP.
 
@@ -363,7 +382,7 @@ def clustering(vectorize_sentence,words_embeddings):
     return embedding, embedding_words
 
 
-def get_topic_description(centroids,embedding_words):
+def get_topic_description(centroids, embedding_words):
     """
     Generate topic descriptions based on centroids and word embeddings.
 
@@ -381,17 +400,19 @@ def get_topic_description(centroids,embedding_words):
 
     """
     dic_topics = {}
-    for topic in range(centroids.shape[0]) :
+    for topic in range(centroids.shape[0]):
         dic_topic = {}
-        similarity  = np.matmul(embedding_words ,centroids[topic,:].reshape(1,-1).T).mean(axis=1)
+        similarity = np.matmul(
+            embedding_words, centroids[topic, :].reshape(1, -1).T
+        ).mean(axis=1)
         ordered_similarity = np.argsort(similarity)
-        dic_topic.update({"centroid" : ordered_similarity[0] })
-        dic_topic.update({"top k vectors" : ordered_similarity[1:10] })
-        dic_topics.update({"topic_"+str(topic) : dic_topic })
+        dic_topic.update({"centroid": ordered_similarity[0]})
+        dic_topic.update({"top k vectors": ordered_similarity[1:10]})
+        dic_topics.update({"topic_" + str(topic): dic_topic})
     return dic_topics
 
 
-def print_topic(topic,dic_topics,dictionnary):
+def print_topic(topic, dic_topics, dictionnary):
     """
     Print the description of a topic.
 
@@ -406,51 +427,62 @@ def print_topic(topic,dic_topics,dictionnary):
     Returns:
         None
     """
-    print(dictionnary[dic_topics["topic_"+str(topic) ]["centroid"]])
-    print([ dictionnary[word] for word in dic_topics["topic_"+str(topic)]["top k vectors"]])
+    print(dictionnary[dic_topics["topic_" + str(topic)]["centroid"]])
+    print(
+        [
+            dictionnary[word]
+            for word in dic_topics["topic_" + str(topic)]["top k vectors"]
+        ]
+    )
 
 
-def optimize_xgb(X_train, y_train,X_test,y_test):
+def optimize_xgb(X_train, y_train, X_test, y_test):
     params = {
-        'max_depth': hp.choice('max_depth', np.arange(2, 12, dtype=int)),
-        'learning_rate': hp.loguniform('learning_rate', -10, 10),
-        'subsample': hp.uniform('subsample', 0.5, 1),
-        "scale_pos_weight" : hp.choice("scale_pos_weight",[1,10,25,50,75,99,100,1000]),
+        "max_depth": hp.choice("max_depth", np.arange(2, 12, dtype=int)),
+        "learning_rate": hp.loguniform("learning_rate", -10, 10),
+        "subsample": hp.uniform("subsample", 0.5, 1),
+        "scale_pos_weight": hp.choice(
+            "scale_pos_weight", [1, 10, 25, 50, 75, 99, 100, 1000]
+        ),
     }
 
     def objective_xgb_note(params):
-        xgb_model = xgb.XGBClassifier(**params,tree_method="gpu_hist", enable_categorical=True)
+        xgb_model = xgb.XGBClassifier(
+            **params, tree_method="gpu_hist", enable_categorical=True
+        )
         xgb_model.fit(X_train, y_train)
-        score = evaluate_model(X_test, y_test,xgb_model,verbose=False)
-        return {'loss': -score, 'status': STATUS_OK}
+        score = evaluate_model(X_test, y_test, xgb_model, verbose=False)
+        return {"loss": -score, "status": STATUS_OK}
 
     best_params = fmin(objective_xgb_note, params, algo=tpe.suggest, max_evals=100)
     print("Best set of hyperparameters: ", best_params)
     xgb_model = xgb.XGBClassifier(**best_params)
     xgb_model.fit(X_train, y_train)
-    score = evaluate_model(X_test, y_test,xgb_model,verbose=True)
+    score = evaluate_model(X_test, y_test, xgb_model, verbose=True)
     return xgb_model
 
 
-def optimize_catboost(X_train, y_train,X_test,y_test):
+def optimize_catboost(X_train, y_train, X_test, y_test):
     params = {
-        'depth': hp.choice('max_depth', np.arange(2, 12, dtype=int)),
-        'l2_leaf_reg': hp.loguniform('l2_leaf_reg', 1, 10),
-        'iterations': hp.choice('iterations', np.arange(50, 150,  dtype=int)),
-        'learning_rate':  hp.uniform('learning_rate', 0.001, 0.1),
-        "verbose":0
+        "depth": hp.choice("max_depth", np.arange(2, 12, dtype=int)),
+        "l2_leaf_reg": hp.loguniform("l2_leaf_reg", 1, 10),
+        "iterations": hp.choice("iterations", np.arange(50, 150, dtype=int)),
+        "learning_rate": hp.uniform("learning_rate", 0.001, 0.1),
+        "verbose": 0,
     }
 
     def objective_xgb_note(params):
-        cat_model = cb.CatBoostClassifier(**params,loss_function='Logloss', eval_metric='AUC') 
-        #cat_model = xgb.XGBClassifier(**params,tree_method="gpu_hist", enable_categorical=True)
+        cat_model = cb.CatBoostClassifier(
+            **params, loss_function="Logloss", eval_metric="AUC"
+        )
+        # cat_model = xgb.XGBClassifier(**params,tree_method="gpu_hist", enable_categorical=True)
         cat_model.fit(X_train, y_train)
-        score = evaluate_model(X_test, y_test,cat_model,verbose=False)
-        return {'loss': -score, 'status': STATUS_OK}
+        score = evaluate_model(X_test, y_test, cat_model, verbose=False)
+        return {"loss": -score, "status": STATUS_OK}
 
     best_params = fmin(objective_xgb_note, params, algo=tpe.suggest, max_evals=10)
     print("Best set of hyperparameters: ", best_params)
     cat_model = cb.CatBoostClassifier(**best_params)
-    cat_model.fit(X_train, y_train,verbose=0)
-    score = evaluate_model(X_test, y_test,cat_model,verbose=True)
+    cat_model.fit(X_train, y_train, verbose=0)
+    score = evaluate_model(X_test, y_test, cat_model, verbose=True)
     return cat_model
