@@ -30,7 +30,7 @@ class MLPModel(nn.Module):
                 LinearLayer(
                     input_sizes[i],
                     input_sizes[i + 1],
-                    dropout_ratio=use_dropout[i],
+                    dropout_ratio=dropout_ratio,
                     use_dropout=use_dropout,
                 )
                 for i in range(len(input_sizes) - 1)

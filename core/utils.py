@@ -281,8 +281,8 @@ def evaluate_model(X_test, y_test, model, verbose=0):
         evaluate_model(X_test_data, y_test_labels, trained_model)
     """
     y_predicted = model.predict(X_test)
-    y_predicted = np.where(y_predicted > 0.5, 1, 0)
     fpr, tpr, thresholds = roc_curve(y_test, y_predicted, pos_label=1)
+    y_predicted = np.where(y_predicted > 0.5, 1, 0)
     if verbose == 1:
         print(f" balanced accuracy is {balanced_accuracy_score(y_test,y_predicted)}")
         print(f" AUC is {auc(fpr, tpr)}")
